@@ -17,7 +17,7 @@ import java.util.regex.Pattern;
 /**
  * @author qinkangdeid
  */
-@Slf4j(topic = "print-param:")
+@Slf4j(topic = "[api-param]")
 public class ParamFilter implements Filter {
 
     private PrintParamProperties properties;
