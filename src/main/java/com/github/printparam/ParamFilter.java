@@ -1,8 +1,7 @@
 package com.github.printparam;
 
 import com.github.printparam.starter.PrintParamProperties;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 
 import javax.servlet.*;
 import javax.servlet.http.HttpServletRequest;
@@ -15,32 +14,38 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Pattern;
 
+/**
+ * @author qinkangdeid
+ */
+@Slf4j(topic = "print-param:")
 public class ParamFilter implements Filter {
-    private static final Logger LOG = LoggerFactory.getLogger("print-param:");
+
     private PrintParamProperties properties;
 
     public ParamFilter(PrintParamProperties properties) {
         this.properties = properties;
     }
 
+    @Override
     public void init(FilterConfig filterConfig) {
     }
 
+    @Override
     public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain) throws IOException, ServletException {
         if (properties == null) {
             properties = new PrintParamProperties();
         }
         HttpServletRequest r = (HttpServletRequest) servletRequest;
 
-        if (isRequestExcluded(r)){
+        if (isRequestExcluded(r)) {
             filterChain.doFilter(servletRequest, servletResponse);
         } else {
             ParamRequestWrapper requestWrapper = new ParamRequestWrapper((HttpServletRequest) servletRequest);
 
-            if (properties.getEnableInputParam()) {
+            if (properties.isEnableInputParam()) {
                 String path = r.getQueryString();
                 if (path == null) {
-                    Map<String, String> map = new HashMap<String, String>();
+                    Map<String, String> map = new HashMap<>();
                     Enumeration headerNames = ((HttpServletRequest) servletRequest).getHeaderNames();
                     while (headerNames.hasMoreElements()) {
                         String key = (String) headerNames.nextElement();
@@ -50,20 +55,25 @@ public class ParamFilter implements Filter {
                     path = map.toString();
                 }
                 String url = r.getRequestURI();
-                LOG.info("request uri:{}", url);
-                LOG.info("request header:{}", path);
+                log.info("[request uri]:{}", url);
+                if (properties.isEnableHeaderParam()) {
+                    log.info("[request header]:{}", path);
+                }
                 try {
-                    Map map = servletRequest.getParameterMap();
-                    LOG.info("request form:" + map);
+                    Map<String, String[]> map = servletRequest.getParameterMap();
+                    log.info("[request form]:");
+                    map.forEach((k, v) -> log.info("{}:{}", k, v));
                     BufferedReader bufferedReader = requestWrapper.getReader();
                     String line;
                     StringBuilder sb = new StringBuilder();
                     while ((line = bufferedReader.readLine()) != null) {
                         sb.append(line);
                     }
-                    LOG.info("request body:" + sb.toString());
+                    if (sb.length() > 0) {
+                        log.info("[request body]:" + sb.toString());
+                    }
                 } catch (Exception e) {
-                    LOG.warn("request error:", e);
+                    log.warn("[request error]:", e);
                 }
             }
             ResponseWrapper responseWrapper = new ResponseWrapper((HttpServletResponse) servletResponse);
@@ -78,24 +88,25 @@ public class ParamFilter implements Filter {
                 out.write(result);
                 out.flush();
             } finally {
-                if (out != null){
+                if (out != null) {
                     out.close();
                 }
             }
-            if (properties.getEnableOutputResult()) {
-                LOG.info("response return data:" + result);
+            if (properties.isEnableOutputResult()) {
+                log.info("[response return data]:" + result);
             }
         }
     }
 
 
+    @Override
     public void destroy() {
     }
 
     private boolean isRequestExcluded(HttpServletRequest httpRequest) {
         return this.properties.getFilterExcludePattern() != null
                 && Pattern.compile(this.properties.getFilterExcludePattern())
-                        .matcher(httpRequest.getRequestURI().substring(httpRequest.getContextPath().length()))
-                        .matches();
+                .matcher(httpRequest.getRequestURI().substring(httpRequest.getContextPath().length()))
+                .matches();
     }
 }

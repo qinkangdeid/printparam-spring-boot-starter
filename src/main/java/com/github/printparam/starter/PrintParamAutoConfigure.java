@@ -24,8 +24,8 @@ public class PrintParamAutoConfigure {
 
     @Bean
     public FilterRegistrationBean addFilter() {
-        ParamFilter filter  = new ParamFilter(properties);
-        FilterRegistrationBean<ParamFilter> registration = new FilterRegistrationBean<ParamFilter>(filter);
+        ParamFilter filter = new ParamFilter(properties);
+        FilterRegistrationBean<ParamFilter> registration = new FilterRegistrationBean<>(filter);
         registration.addUrlPatterns(properties.getFilterIncludePattern());
         return registration;
     }
